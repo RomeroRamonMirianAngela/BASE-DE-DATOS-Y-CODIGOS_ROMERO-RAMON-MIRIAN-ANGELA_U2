@@ -1,0 +1,38 @@
+# ================================================
+# FINANZAS I - UNIDAD II
+# Codigo de matricula: 2024200523C
+# Tema 60: Estructura de financiamiento y
+# costo de capital en el sistema bancario peruano
+# ================================================
+
+# 1. ENTORNO VIRTUAL DE PYTHON
+.venv/
+venv/
+
+# 2. VARIABLES DE ENTORNO Y CREDENCIALES
+.env
+.env.*
+!.env.example
+
+# 3. ARCHIVOS TEMPORALES DE PYTHON
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 4. ARCHIVOS TEMPORALES DEL SISTEMA
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 5. ARCHIVOS TEMPORALES DE EXCEL
+~$*.xlsx
+~$*.xls
+
+# 6. ARCHIVOS TEMPORALES DE EDITORES
+.vscode/
+.idea/
+
+# 7. ARCHIVOS DE PRUEBA Y RESPALDOS TEMPORALES
+*.tmp
+*.bak
