@@ -1,3 +1,8 @@
+# Nombres y apellidos completos: ROMERO RAMON MIRIAN ANGELA
+# Codigo de matricula: 2024200523C
+# Tema 60: Estructura de financiamiento y costo de capital en el sistema bancario peruano
+# Fecha de extraccion: 16-11-2026
+
 """
 FINANZAS I - UNIDAD II | VIA 1: EXTRACCION MEDIANTE API REST DEL BCRP
 ====================================================================
