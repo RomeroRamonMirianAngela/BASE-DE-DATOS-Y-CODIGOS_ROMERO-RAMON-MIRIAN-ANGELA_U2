@@ -1,7 +1,7 @@
 # Nombres y apellidos completos: ROMERO RAMON MIRIAN ANGELA
 # Codigo de matricula: 2024200523C
 # Tema 60: Estructura de financiamiento y costo de capital en el sistema bancario peruano
-# Fecha de extraccion: 16-11-2026
+# Fecha de extraccion: 2026-11-26
 
 """
 FINANZAS I - UNIDAD II
@@ -17,7 +17,10 @@ descargarlos y conservarlos en su formato Excel original (XLS/XLSX).
 ALCANCE
 -------
 - Fuente: portal estadistico de la SBS.
-- Periodo de estudio: enero de 2018 a diciembre de 2025.
+- Periodo de estudio: enero de 2017 a diciembre de 2025 (108 meses).
+- Ventana previa: enero-diciembre de 2016, que se descarga SOLO para que
+  03_limpieza_datos.py calcule el costo de fondeo movil de 12 meses
+  desde enero de 2017. Los meses de 2016 nunca salen en el panel.
 - Reportes considerados: siete tipos de reportes SBS.
 - Carpeta de destino: datos_crudos/.
 - Registro de ejecucion: log_ejecucion.txt, en la raiz del proyecto.
@@ -35,11 +38,14 @@ EJECUCION DESDE LA RAIZ DEL PROYECTO
 Modo demostracion (un reporte de diciembre de 2025):
     python codigo/02_scraping_web.py --modo demo
 
-Modo completo (siete reportes, enero de 2018 a diciembre de 2025):
+Modo completo (siete reportes, ventana 2016 + enero de 2017 a diciembre de 2025):
     python codigo/02_scraping_web.py --modo completo
 
 Solo el anio 2025:
     python codigo/02_scraping_web.py --modo completo --solo-anio 2025
+
+Solo la ventana previa 2016 (si ya tienes 2017-2025 descargados):
+    python codigo/02_scraping_web.py --modo completo --solo-anio 2016
 
 Un reporte particular:
     python codigo/02_scraping_web.py --modo completo --solo-reporte B-2401
@@ -80,8 +86,12 @@ from bs4 import BeautifulSoup
 # Estos valores corresponden a la investigacion y se conservan tal
 # como estaban definidos en el codigo original.
 CODIGO_MATRICULA = "2024200523C"
-FECHA_INICIO = "2018-01-01"
+# El mismo periodo se declara en los scripts 01, 03 y 04.
+FECHA_INICIO = "2017-01-01"
 FECHA_CORTE = "2025-12-31"
+# Doce meses previos al inicio: solo para el costo de fondeo movil de 12
+# meses de 2017 (calculado en el script 03). No forman parte del panel.
+FECHA_INICIO_VENTANA = "2016-01-01"
 
 # __file__ es la ruta del propio script. Su carpeta superior es codigo/;
 # la siguiente es la raiz del proyecto, desde donde se guardan los datos.
@@ -334,7 +344,7 @@ def detectar_anio_mes(url: str) -> tuple[int, int] | None:
         if partes[i].isdigit() and len(partes[i]) == 4:
             anio = int(partes[i])
             mes = MESES.get(sin_tildes(partes[i + 1]))
-            if mes and 2017 <= anio <= 2026:
+            if mes and int(FECHA_INICIO_VENTANA[:4]) <= anio <= int(FECHA_CORTE[:4]) + 1:
                 return anio, mes
     return None
 
@@ -435,18 +445,19 @@ def guardar_sin_sobrescribir(contenido: bytes, ruta: Path) -> str:
 # 6. SELECCION DEL PERIODO DE DESCARGA
 # =====================================================================
 def intervalo(
-    modo: str, incluir_2017: bool, solo_anio: int | None
+    modo: str, sin_ventana: bool, solo_anio: int | None
 ) -> list[tuple[int, int]]:
     """Devuelve los pares (anio, mes) que se intentaran descargar.
 
     Demo: exclusivamente diciembre de 2025.
-    Completo: todos los meses del periodo 2018-2025 (o desde 2017 si
-    se ha solicitado expresamente). --solo-anio limita el conjunto.
+    Completo: la ventana 2016 (12 meses previos) y todo el periodo
+    2017-2025. Con --sin-ventana-previa empieza en enero de 2017.
+    --solo-anio limita el conjunto a un anio.
     """
     if modo == "demo":
         return [(2025, 12)]
 
-    desde = 2017 if incluir_2017 else int(FECHA_INICIO[:4])
+    desde = int((FECHA_INICIO if sin_ventana else FECHA_INICIO_VENTANA)[:4])
     hasta = int(FECHA_CORTE[:4])
     return [
         (a, m)
@@ -476,11 +487,12 @@ def ejecutar(args: argparse.Namespace) -> int:
     modo = args.modo
     logger = crear_logger(modo)
     logger.info(
-        "INICIO | fecha=%s | modo=%s | inicio=%s | corte=%s",
+        "INICIO | fecha=%s | modo=%s | inicio=%s | corte=%s | ventana_previa=%s",
         fecha_lima(), modo, FECHA_INICIO, FECHA_CORTE,
+        "no" if args.sin_ventana_previa else FECHA_INICIO_VENTANA,
     )
     cliente = ClienteSBS(logger)
-    periodos = intervalo(modo, args.incluir_2017, args.solo_anio)
+    periodos = intervalo(modo, args.sin_ventana_previa, args.solo_anio)
     if not periodos:
         raise ValueError("No existen meses seleccionados para esos parametros")
 
@@ -592,11 +604,13 @@ def main() -> None:
         "--modo", choices=["demo", "completo"], default="demo"
     )
     parser.add_argument(
-        "--incluir-2017", action="store_true",
-        help="Descargar 2017 para la ventana movil de 12 meses",
+        "--sin-ventana-previa", action="store_true",
+        help="No descargar 2016 (ventana del costo de fondeo movil de 2017)",
     )
     parser.add_argument(
-        "--solo-anio", type=int, choices=range(2017, 2026), metavar="AAAA"
+        "--solo-anio", type=int, metavar="AAAA",
+        choices=range(int(FECHA_INICIO_VENTANA[:4]), int(FECHA_CORTE[:4]) + 1),
+        help="Descargar un solo anio (2016 = ventana previa; 2017-2025 = estudio)",
     )
     parser.add_argument(
         "--solo-reporte", choices=REPORTES.keys(), metavar="CODIGO"
@@ -605,11 +619,11 @@ def main() -> None:
 
     # El modo demo esta definido exclusivamente para diciembre de 2025.
     if args.modo == "demo" and (
-        args.incluir_2017 or args.solo_anio is not None
+        args.sin_ventana_previa or args.solo_anio is not None
     ):
         parser.error("En modo demo se utiliza exclusivamente diciembre 2025")
-    if args.solo_anio == 2017 and not args.incluir_2017:
-        parser.error("Para 2017 incluir --incluir-2017")
+    if args.sin_ventana_previa and args.solo_anio == int(FECHA_INICIO_VENTANA[:4]):
+        parser.error("--solo-anio 2016 es la ventana previa: no usar --sin-ventana-previa")
 
     sys.exit(ejecutar(args))
 

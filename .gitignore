@@ -1,38 +1,60 @@
-# ================================================
-# FINANZAS I - UNIDAD II
-# Codigo de matricula: 2024200523C
-# Tema 60: Estructura de financiamiento y
-# costo de capital en el sistema bancario peruano
-# ================================================
 
-# 1. ENTORNO VIRTUAL DE PYTHON
+# ============================================================
+# FINANZAS I - UNIDAD II
+# Proyecto: Estructura de financiamiento y costo de capital
+# Sistema bancario peruano | SBS + BCRP | 2017-2025
+# ============================================================
+
+# 1. ENTORNOS VIRTUALES DE PYTHON
 .venv/
 venv/
+env/
+ENV/
 
-# 2. VARIABLES DE ENTORNO Y CREDENCIALES
+# 2. CREDENCIALES Y VARIABLES DE ENTORNO
 .env
 .env.*
 !.env.example
 
-# 3. ARCHIVOS TEMPORALES DE PYTHON
+# 3. CACHE Y ARCHIVOS TEMPORALES DE PYTHON
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
 
-# 4. ARCHIVOS TEMPORALES DEL SISTEMA
+# 4. DATOS ORIGINALES SBS Y BCRP
+datos_crudos/
+
+# 5. BASES DE DATOS PROCESADAS
+datos_procesados/
+
+# 6. RESULTADOS DEL ANALISIS ECONOMETRICO
+salidas/
+
+# 7. REGISTROS DE EJECUCION
+log_ejecucion.txt
+*.log
+
+# 8. ARCHIVOS TEMPORALES
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+~$*
+
+# 9. CONFIGURACIONES LOCALES DEL EDITOR
+.vscode/
+.idea/
+
+# 10. ARCHIVOS DEL SISTEMA OPERATIVO
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# 5. ARCHIVOS TEMPORALES DE EXCEL
+# 11. ARCHIVOS TEMPORALES DE OFFICE
 ~$*.xlsx
 ~$*.xls
-
-# 6. ARCHIVOS TEMPORALES DE EDITORES
-.vscode/
-.idea/
-
-# 7. ARCHIVOS DE PRUEBA Y RESPALDOS TEMPORALES
-*.tmp
-*.bak
+~$*.docx

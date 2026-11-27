@@ -1,21 +1,17 @@
-# Nombres y apellidos completos: ROMERO RAMON MIRIAN ANGELA
+﻿# Nombres y apellidos completos: ROMERO RAMON MIRIAN ANGELA
 # Codigo de matricula: 2024200523C
 # Tema 60: Estructura de financiamiento y costo de capital en el sistema bancario peruano
-# Fecha de extraccion: 16-11-2026
+# Fecha de extraccion: 2026-11-26
 
 """
 FINANZAS I - UNIDAD II | VIA 1: EXTRACCION MEDIANTE API REST DEL BCRP
 ====================================================================
-Nombre y Apellidos completos: ROMERO RAMON MIRIAN ANGELA
-Codigo matricula : 2024200523C
-Tema             : 60 - Estructura de financiamiento y costo de capital
-                   en el sistema bancario peruano
-Fecha de extraccion: 16/11/2026
 
 OBJETIVO DEL SCRIPT
 -------------------
 Descargar, mediante la API oficial del Banco Central de Reserva del Peru
-(BCRP), dos series mensuales de tasas pasivas para el periodo 2018-2025.
+(BCRP), dos series mensuales de tasas pasivas para el periodo 2017-2025
+(enero de 2017 a diciembre de 2025: 108 meses).
 
 SERIES CONSULTADAS
 ------------------
@@ -30,15 +26,17 @@ EJECUCION (desde la carpeta principal del proyecto)
     python codigo/01_extraccion_api.py
     python codigo/01_extraccion_api.py --modo demo
 
-Modo completo : consulta las dos series desde 2018-01 hasta 2025-12.
-Modo demo     : consulta solo TIPMN desde 2018-01 hasta 2018-03.
+Modo completo : consulta las dos series desde 2017-01 hasta 2025-12.
+Modo demo     : consulta solo TIPMN desde 2017-01 hasta 2017-03.
 
 SALIDAS
 -------
-    datos_crudos/bcrp_original_PN07816NM_2024200523C.csv
-    datos_crudos/bcrp_original_PN07836NM_2024200523C.csv
+    datos_crudos/bcrp_original_PN07816NM_201701_202512_2024200523C.csv
+    datos_crudos/bcrp_original_PN07836NM_201701_202512_2024200523C.csv
     log_ejecucion.txt
 
+El nombre lleva el periodo (inicio_fin). Asi, si se cambia FECHA_INICIO, el
+nuevo crudo se guarda aparte y NUNCA se sobrescribe un original anterior.
 El modo demo anade '_demo' antes de '.csv' y no sustituye los originales.
 """
 
@@ -70,9 +68,10 @@ CODIGO_MATRICULA = "2024200523C"
 
 # Limites temporales del estudio. El script convierte estas fechas a los
 # periodos mensuales aceptados por el servicio del BCRP.
-FECHA_INICIO = "2018-01-01"
+# El mismo periodo se declara en los scripts 02, 03 y 04.
+FECHA_INICIO = "2017-01-01"
 FECHA_CORTE = "2025-12-31"
-FECHA_CORTE_DEMO = "2018-03-31"  # Tres meses para la demostracion en vivo.
+FECHA_CORTE_DEMO = "2017-03-31"  # Tres meses para la demostracion en vivo.
 
 # Series oficiales de tasas pasivas. Se mantienen sus codigos de origen.
 SERIES_BCRP = {
@@ -136,10 +135,28 @@ def configurar_log(modo: str) -> logging.Logger:
 def convertir_periodo(fecha_iso: str) -> str:
     """Convierte 'AAAA-MM-DD' a 'AAAA-M' para el parametro de la API.
 
-    Ejemplo: '2018-01-01' se convierte en '2018-1'.
+    Ejemplo: '2017-01-01' se convierte en '2017-1'.
     Esta conversion NO modifica ningun archivo descargado.
     """
     return f"{fecha_iso[:4]}-{int(fecha_iso[5:7])}"
+
+
+def meses_solicitados(fecha_inicio: str, fecha_fin: str) -> int:
+    """Numero de meses entre dos fechas, ambos extremos incluidos.
+
+    Ejemplo: 2017-01-01 a 2025-12-31 -> 108 meses (9 anios x 12).
+    """
+    a1, m1 = int(fecha_inicio[:4]), int(fecha_inicio[5:7])
+    a2, m2 = int(fecha_fin[:4]), int(fecha_fin[5:7])
+    return (a2 - a1) * 12 + (m2 - m1) + 1
+
+
+def nombre_crudo(codigo: str, fecha_fin: str, modo: str) -> str:
+    """Nombre del CSV original: serie, periodo AAAAMM_AAAAMM y codigo."""
+    inicio = FECHA_INICIO[:7].replace("-", "")
+    fin = fecha_fin[:7].replace("-", "")
+    sufijo = "_demo" if modo == "demo" else ""
+    return f"bcrp_original_{codigo}_{inicio}_{fin}_{CODIGO_MATRICULA}{sufijo}.csv"
 
 
 def construir_endpoint(codigo: str, fecha_fin: str) -> str:
@@ -215,8 +232,8 @@ def contar_periodos_visibles(contenido: bytes) -> int:
     """Cuenta periodos mensuales en memoria antes de guardar el CSV.
 
     La respuesta puede separar filas mediante saltos de linea o etiquetas
-    '<br>'. Se reconocen etiquetas como 'Ene18', 'Ene.18', 'Ene-2018' y
-    periodos de tipo '2018-01'.
+    '<br>'. Se reconocen etiquetas como 'Ene17', 'Ene.17', 'Ene-2017' y
+    periodos de tipo '2017-01'.
 
     El conteo NO implica limpiar, recalcular ni reescribir el CSV original.
     Si la respuesta parece HTML, JSON o no tiene periodos, se rechaza.
@@ -296,9 +313,7 @@ def descargar_serie(
     con el sufijo '_demo' para no alterar la evidencia del periodo completo.
     """
     url = construir_endpoint(codigo, fecha_fin)
-    sufijo = "_demo" if modo == "demo" else ""
-    nombre = f"bcrp_original_{codigo}_{CODIGO_MATRICULA}{sufijo}.csv"
-    destino = carpeta / nombre
+    destino = carpeta / nombre_crudo(codigo, fecha_fin, modo)
 
     print(f"\n[BCRP] Serie: {codigo} | {descripcion}")
     print(f"[BCRP] Endpoint: {url}")
@@ -325,7 +340,7 @@ def descargar_serie(
 
     # Paso 4: comparar el numero visible de meses con la cobertura solicitada.
     # Este control solo genera una advertencia: no modifica los CSV.
-    esperados = 3 if modo == "demo" else 96
+    esperados = meses_solicitados(FECHA_INICIO, fecha_fin)  # demo 3; completo 108
     if cantidad != esperados:
         aviso = (
             f"La respuesta tiene {cantidad} periodos detectados y se esperaban "
@@ -383,7 +398,7 @@ def main() -> None:
         "--modo",
         choices=("completo", "demo"),
         default="completo",
-        help="completo: 2018-2025 y dos series; demo: tres meses y una serie",
+        help="completo: 2017-2025 y dos series; demo: tres meses (2017) y una serie",
     )
     args = parser.parse_args()
 
